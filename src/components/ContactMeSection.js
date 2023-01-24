@@ -8,6 +8,7 @@ import {
   Button,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   FormLabel,
   Heading,
   Input,
@@ -25,48 +26,47 @@ const LandingSection = () => {
   const { onOpen } = useAlertContext();
 
   const formik = useFormik({
-    initialValues: {firstName:"",
-                   email:"",
-                   type:"",
-                   comment:""},
-    onSubmit: (values) => {
-       useEffect(()=>{
-      submit("https://graded-assessment.afamokonkwo.repl.co/",values);
-    },[values]);
+    initialValues: {
+        firstName:"",
+        email:"",
+        type:"",
+        comment:""
     },
     validationSchema: Yup.object({
-      firstName:Yup.string().required("Required"),
-      email: Yup.string().required("Required"),
-      type: Yup.string().required("Required"),
-      comment: Yup.string().required("Required")
-    }),
+          firstName:Yup.string().required("Required"),
+          email: Yup.string().email("Invalid Email Address").required("Required"),
+          type: Yup.string().required("Optional"),
+          comment: Yup.string().min(25,"Must be at least 25 characters").required("Required")
+        }),
+    onSubmit:  (values,{setSubmitting,resetForm}) => {
+
+          handleSubmit(values,setSubmitting,resetForm);
+
+    },
   });
-const[fieldProps,setFieldProps] = React.useState({
-  name:"",
-  value:"",
-  onChange: null,
-  onBlur:null,
-});
 
-  const handleChange = (e) =>{
-    setFieldProps({
-      ...formik.getFieldProps
-    })
+  const handleSubmit = async (values,setSubmitting,resetForm) =>{
+    setSubmitting(true);
+    await submit("https://graded-assessment.afamokonkwo.repl.co/",values)
+    setSubmitting(false);
+    resetForm();
+  }
+  useEffect(()=>{
+   console.log("Formik Object =="+JSON.stringify(formik));
+  if(response != null){
+        if(response.type == "success")
+           {
+                onOpen(response.type,formik.values.firstName+" "+response.message);
+
+           }
+           else
+           {
+                console.log("Error-Response  =="+JSON.stringify(response));
+                onOpen(response.type,response.message);
+           }
   }
 
-  const handleSubmit = (e) =>{
-    e.preventDefault();
-    formik.handleSubmit;
-    if(response == "success"){
-      onOpen(response.type,formik.values.firstName+" "+response.message);
-      formik.resetForm();
-    }
-    else{
-      onOpen(response.type,response.message);
-    }
-    }
-   
-  }
+  },[response,isLoading]);
   return (
     <FullScreenSection
       isDarkBackground
@@ -79,22 +79,21 @@ const[fieldProps,setFieldProps] = React.useState({
           Contact me
         </Heading>
         <Box p={6} rounded="md" w="100%">
-          <form onSubmit =  {handleSubmit}>
+          <form onSubmit={formik.handleSubmit }>
             <VStack spacing={4}>
-              <FormControl isInvalid={false}>
+              <FormControl isInvalid={(formik.touched.firstName && formik.errors.firstName)? true:false}>
                 <FormLabel htmlFor="firstName">Name</FormLabel>
                 <Input
                   id="firstName"
                   name="firstName"
                   value = {formik.values.firstName}
-                  onChange = {handleChange}
                   {...formik.getFieldProps("firstName")}
                 />
-                <FormErrorMessage>
-                  {formik.touched.firstName && formik.error.firstName}
-                </FormErrorMessage>
+
+               <FormErrorMessage>{formik.errors.firstName}</FormErrorMessage>
+
               </FormControl>
-              <FormControl isInvalid={false}>
+              <FormControl isInvalid={(formik.touched.email && formik.errors.email)? true:false}>
                 <FormLabel htmlFor="email">Email Address</FormLabel>
                 <Input
                   id="email"
@@ -102,13 +101,14 @@ const[fieldProps,setFieldProps] = React.useState({
                   type="email"
                   value ={formik.values.email}
                   {...formik.getFieldProps("email")}
+
                 />
-                <FormErrorMessage>
-                {formik.touched.eamil && formik.error.email}</FormErrorMessage>
+
+               <FormErrorMessage>{formik.errors.email}</FormErrorMessage>
               </FormControl>
               <FormControl>
                 <FormLabel htmlFor="type">Type of enquiry</FormLabel>
-                <Select id="type" name="type" value ={formik.values.firstName} {...formik.getFieldProps("type")}>
+                <Select id="type" name="type" value ={formik.values.type} {...formik.getFieldProps("type")}>
                   <option value="hireMe">Freelance project proposal</option>
                   <option value="openSource">
                     Open source consultancy session
@@ -116,21 +116,19 @@ const[fieldProps,setFieldProps] = React.useState({
                   <option value="other">Other</option>
                 </Select>
               </FormControl>
-              <FormControl isInvalid={false}>
+              <FormControl isInvalid={(formik.touched.comment && formik.errors.comment)? true:false}>
                 <FormLabel htmlFor="comment">Your message</FormLabel>
                 <Textarea
                   id="comment"
                   name="comment"
                   height={250}
                   value ={formik.values.comment}
-                  onChange ={handleChange}                {...formik.getFieldProps("comment")}
+                  {...formik.getFieldProps("comment")}
                 />
-                <FormErrorMessage>
-                  {formik.touched.comment && formik.error.comment}
-                </FormErrorMessage>
+                <FormErrorMessage>{formik.errors.comment}</FormErrorMessage>
               </FormControl>
-              <Button type="submit" colorScheme="purple" width="full">
-                Submit
+              <Button  type="submit" colorScheme="purple" width="full">
+                {(isLoading)? "Loading...": "Submit"}
               </Button>
             </VStack>
           </form>
